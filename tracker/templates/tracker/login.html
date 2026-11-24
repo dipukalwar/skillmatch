@@ -1,0 +1,23 @@
+{% extends "tracker/base.html" %}
+{% block title %}Log in · SkillMatch{% endblock %}
+{% block content %}
+<div class="auth">
+  <div class="panel">
+    <h1>Welcome back</h1>
+    <p class="sub">Log in to see your applications.</p>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-error mb-2">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      {% for field in form %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="err">{{ field.errors|join:" " }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn-main">Log in</button>
+    </form>
+    <p class="foot">New here? <a href="{% url 'signup' %}">Create an account</a></p>
+  </div>
+</div>
+{% endblock %}

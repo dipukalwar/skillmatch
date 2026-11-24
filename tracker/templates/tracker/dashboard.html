@@ -1,0 +1,90 @@
+{% extends "tracker/base.html" %}
+{% block title %}Applications · SkillMatch{% endblock %}
+{% block content %}
+<div class="row g-4">
+
+  <aside class="col-lg-4">
+    <div class="sticky-side">
+      <section class="panel">
+        <h2>Your skills</h2>
+        <p class="sub">Comma-separated. Every application is rescored when you save.</p>
+        <form method="post">
+          {% csrf_token %}
+          {{ profile_form.skills_text }}
+          <button type="submit" name="update_skills" class="btn-main">Save skills and rescore</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Add an application</h2>
+        <p class="sub">Paste the job description to see your match and what's missing.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">{{ app_form.company }}</div>
+          <div class="field">{{ app_form.role }}</div>
+          <div class="field">{{ app_form.status }}</div>
+          <div class="field">{{ app_form.job_description }}</div>
+          <button type="submit" name="add_application" class="btn-main">Score and save</button>
+        </form>
+      </section>
+    </div>
+  </aside>
+
+  <section class="col-lg-8">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h1 class="h4 mb-0">Applications <span class="meta">({{ applications.count }})</span></h1>
+      <nav class="filters" aria-label="Filter by status">
+        <a href="{% url 'dashboard' %}" class="{% if not status_filter %}active{% endif %}">All</a>
+        <a href="?status=APPLIED" class="{% if status_filter == 'APPLIED' %}active{% endif %}">Applied</a>
+        <a href="?status=INTERVIEW" class="{% if status_filter == 'INTERVIEW' %}active{% endif %}">Interview</a>
+        <a href="?status=OFFER" class="{% if status_filter == 'OFFER' %}active{% endif %}">Offer</a>
+        <a href="?status=REJECTED" class="{% if status_filter == 'REJECTED' %}active{% endif %}">Rejected</a>
+      </nav>
+    </div>
+
+    {% for app in applications %}
+    <article class="panel app-card mb-3">
+      <div class="ring {% if app.match_score >= 70 %}hi{% elif app.match_score >= 40 %}mid{% endif %}" style="--p:{{ app.match_score }}" role="img" aria-label="{{ app.match_score }} percent match">
+        <span>{{ app.match_score }}%</span>
+      </div>
+
+      <div>
+        <h2 class="app-title">{{ app.role }} <span class="co">at {{ app.company }}</span></h2>
+        <div class="meta">Applied {{ app.applied_date|date:"M j, Y" }}</div>
+
+        {% if app.missing_list %}
+          <div class="chips">
+            <div class="meta mb-1">Missing from your skills</div>
+            {% for skill in app.missing_list %}<span class="chip">{{ skill }}</span>{% endfor %}
+          </div>
+        {% else %}
+          <div class="all-good">Your skills cover every keyword we detected.</div>
+        {% endif %}
+
+        <div class="card-foot">
+          <form method="post" action="{% url 'update_status' app.pk %}">
+            {% csrf_token %}
+            <select name="status" aria-label="Status" onchange="this.form.submit()">
+              <option value="APPLIED" {% if app.status == 'APPLIED' %}selected{% endif %}>Applied</option>
+              <option value="INTERVIEW" {% if app.status == 'INTERVIEW' %}selected{% endif %}>Interview</option>
+              <option value="OFFER" {% if app.status == 'OFFER' %}selected{% endif %}>Offer</option>
+              <option value="REJECTED" {% if app.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+            </select>
+          </form>
+          <form method="post" action="{% url 'delete_application' app.pk %}" onsubmit="return confirm('Delete this application?')">
+            {% csrf_token %}
+            <button type="submit" class="btn-link-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+    </article>
+    {% empty %}
+      <div class="panel empty">
+        <h3>{% if status_filter %}Nothing with this status yet{% else %}No applications yet{% endif %}</h3>
+        <p class="mb-0">{% if status_filter %}Change the filter or update an application's status.{% else %}Paste a job description on the left to see how well your skills match.{% endif %}</p>
+      </div>
+    {% endfor %}
+  </section>
+
+</div>
+{% endblock %}
